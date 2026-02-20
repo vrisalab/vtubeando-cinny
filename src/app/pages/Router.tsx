@@ -69,7 +69,6 @@ import { Create } from './client/create';
 import { CreateSpaceModalRenderer } from '../features/create-space';
 import { SearchModalRenderer } from '../features/search';
 import { getFallbackSession } from '../state/sessions';
-import { pushSessionToSW } from '../../sw-session';
 import { CallProvider } from './client/call/CallProvider';
 import { PersistentCallContainer } from './client/call/PersistentCallContainer';
 import { ToRoomEvent } from './client/ToRoomEvent';
@@ -119,7 +118,6 @@ export const createRouter = (clientConfig: ClientConfig, screenSize: ScreenSize)
             if (afterLoginPath) setAfterLoginRedirectPath(afterLoginPath);
             return redirect(getLoginPath());
           }
-          pushSessionToSW(session.baseUrl, session.accessToken);
           return null;
         }}
         element={

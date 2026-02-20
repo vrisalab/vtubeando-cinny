@@ -34,6 +34,8 @@ import { useSyncState } from '../../hooks/useSyncState';
 import { stopPropagation } from '../../utils/keyboard';
 import { SyncStatus } from './SyncStatus';
 import { useAppVisibility } from '../../hooks/useAppVisibility';
+import { getFallbackSession } from '../../state/sessions';
+import { AuthMetadataProvider } from '../../hooks/useAuthMetadata';
 
 function ClientRootLoading() {
   return (
