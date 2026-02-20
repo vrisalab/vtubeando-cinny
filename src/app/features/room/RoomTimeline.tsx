@@ -1619,6 +1619,7 @@ export function RoomTimeline({ room, eventId, roomInputRef, editor }: RoomTimeli
     return { item, mEvent, eventTimeline, baseIndex };
   };
   const eventGroupingFunction = (previousEvent: TimelineEvent, nextEvent: TimelineEvent) => {
+      if (previousEvent == null) return false;
       return previousEvent.mEvent.getType() === nextEvent.mEvent.getType()
           && inSameDay(previousEvent.mEvent.getTs(), nextEvent.mEvent.getTs());
   };
