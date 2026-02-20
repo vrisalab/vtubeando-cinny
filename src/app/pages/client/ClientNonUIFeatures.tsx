@@ -1,7 +1,7 @@
 import { useAtomValue } from 'jotai';
 import React, { ReactNode, useCallback, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { RoomEvent, RoomEventHandlerMap } from 'matrix-js-sdk';
+import { EventType, RoomEvent, RoomEventHandlerMap } from 'matrix-js-sdk';
 import { roomToUnreadAtom, unreadEqual, unreadInfoToUnread } from '../../state/room/roomToUnread';
 import LogoSVG from '../../../../public/res/svg/cinny.svg';
 import LogoUnreadSVG from '../../../../public/res/svg/cinny-unread.svg';
@@ -26,6 +26,8 @@ import { getMxIdLocalPart, mxcUrlToHttp } from '../../utils/matrix';
 import { useSelectedRoom } from '../../hooks/router/useSelectedRoom';
 import { useInboxNotificationsSelected } from '../../hooks/router/useInbox';
 import { useMediaAuthentication } from '../../hooks/useMediaAuthentication';
+import { useRoomNavigate } from '../../hooks/useRoomNavigate';
+import { registrationAtom } from '../../state/serviceWorkerRegistration';
 
 function SystemEmojiFeature() {
   const [twitterEmoji] = useSetting(settingsAtom, 'twitterEmoji');
@@ -53,11 +55,17 @@ function PageZoomFeature() {
 
 function FaviconUpdater() {
   const roomToUnread = useAtomValue(roomToUnreadAtom);
+  const [usePushNotifications] = useSetting(settingsAtom, 'usePushNotifications');
+  const registration = useAtomValue(registrationAtom);
 
   useEffect(() => {
     let notification = false;
     let highlight = false;
+    let total = 0;
     roomToUnread.forEach((unread) => {
+      if (unread.from === null) {
+        total += unread.total;
+      }
       if (unread.total > 0) {
         notification = true;
       }
@@ -71,7 +79,18 @@ function FaviconUpdater() {
     } else {
       setFavicon(LogoSVG);
     }
-  }, [roomToUnread]);
+    try {
+      navigator.setAppBadge(total);
+      if (usePushNotifications && total === 0) {
+        registration.getNotifications()
+          .then((pushNotifications) => pushNotifications
+            .forEach((pushNotification) => pushNotification.close()));
+        navigator.clearAppBadge();
+      }
+    } catch (e) {
+      // Likely Firefox/Gecko-based and doesn't support badging API
+    }
+  }, [roomToUnread, usePushNotifications, registration]);
 
   return null;
 }
@@ -83,7 +102,8 @@ function InviteNotifications() {
   const mx = useMatrixClient();
 
   const navigate = useNavigate();
-  const [showNotifications] = useSetting(settingsAtom, 'showNotifications');
+  const [showNotifications] = useSetting(settingsAtom, 'useInAppNotifications');
+  const [usePushNotifications] = useSetting(settingsAtom, 'usePushNotifications');
   const [notificationSound] = useSetting(settingsAtom, 'isNotificationSounds');
 
   const notify = useCallback(
@@ -109,6 +129,7 @@ function InviteNotifications() {
   }, []);
 
   useEffect(() => {
+    if (usePushNotifications && document.visibilityState !== "visible") return;
     if (invites.length > perviousInviteLen && mx.getSyncState() === 'SYNCING') {
       if (showNotifications && notificationPermission('granted')) {
         notify(invites.length - perviousInviteLen);
@@ -118,7 +139,16 @@ function InviteNotifications() {
         playSound();
       }
     }
-  }, [mx, invites, perviousInviteLen, showNotifications, notificationSound, notify, playSound]);
+  }, [
+    mx,
+    invites,
+    perviousInviteLen,
+    showNotifications,
+    usePushNotifications,
+    notificationSound,
+    notify,
+    playSound
+  ]);
 
   return (
     // eslint-disable-next-line jsx-a11y/media-has-caption
@@ -134,7 +164,8 @@ function MessageNotifications() {
   const unreadCacheRef = useRef<Map<string, UnreadInfo>>(new Map());
   const mx = useMatrixClient();
   const useAuthentication = useMediaAuthentication();
-  const [showNotifications] = useSetting(settingsAtom, 'showNotifications');
+  const [showNotifications] = useSetting(settingsAtom, 'useInAppNotifications');
+  const [usePushNotifications] = useSetting(settingsAtom, 'usePushNotifications');
   const [notificationSound] = useSetting(settingsAtom, 'isNotificationSounds');
 
   const navigate = useNavigate();
@@ -153,7 +184,7 @@ function MessageNotifications() {
       roomId: string;
       eventId: string;
     }) => {
-      const noti = new window.Notification(roomName, {
+      const noti = new window.Notification(`${username} in ${roomName}`, {
         icon: roomAvatar,
         badge: roomAvatar,
         body: `New inbox notification from ${username}`,
@@ -186,7 +217,9 @@ function MessageNotifications() {
       data
     ) => {
       if (mx.getSyncState() !== 'SYNCING') return;
+      if (usePushNotifications && document.visibilityState !== "visible") return;
       if (document.hasFocus() && (selectedRoomId === room?.roomId || notificationSelected)) return;
+
       if (
         !room ||
         !data.liveEvent ||
@@ -239,6 +272,7 @@ function MessageNotifications() {
     notificationSound,
     notificationSelected,
     showNotifications,
+    usePushNotifications,
     playSound,
     notify,
     selectedRoomId,
@@ -253,6 +287,45 @@ function MessageNotifications() {
   );
 }
 
+function HandleNotificationClick() {
+  const { navigateRoom } = useRoomNavigate();
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    const handleNotificationClickEvent = (event: any) => {
+      if (
+        !event.data ||
+        !event.source
+      ) return;
+      const eventData = event.data;
+      if (!(eventData?.type === "notificationToRoomEvent")) return;
+      const messageData = eventData?.message;
+      if (!messageData) navigate(getInboxNotificationsPath());
+
+      const eventType = messageData!.type as EventType;
+      switch (eventType) {
+        case EventType.RoomMessage:
+        case EventType.RoomMessageEncrypted:
+          navigateRoom(messageData!.room_id, messageData!.event_id);
+          return;
+        case EventType.RoomMember:
+          if (!(messageData?.content?.membership === "invite")) return;
+          navigate(getInboxInvitesPath());
+          break;
+        default:
+          break;
+      }
+    };
+
+    navigator.serviceWorker.addEventListener("message", handleNotificationClickEvent);
+    return () => {
+      navigator.serviceWorker.removeEventListener("message", handleNotificationClickEvent);
+    }
+  }, [navigate, navigateRoom]);
+
+  return null;
+}
+
 type ClientNonUIFeaturesProps = {
   children: ReactNode;
 };
@@ -265,6 +338,7 @@ export function ClientNonUIFeatures({ children }: ClientNonUIFeaturesProps) {
       <FaviconUpdater />
       <InviteNotifications />
       <MessageNotifications />
+      <HandleNotificationClick />
       {children}
     </>
   );

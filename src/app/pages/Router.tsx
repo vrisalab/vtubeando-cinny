@@ -29,6 +29,7 @@ import {
   _SEARCH_PATH,
   _SERVER_PATH,
   CREATE_PATH,
+  TO_ROOM_EVENT_PATH,
 } from './paths';
 import {
   getAppPathFromHref,
@@ -71,6 +72,7 @@ import { getFallbackSession } from '../state/sessions';
 import { pushSessionToSW } from '../../sw-session';
 import { CallProvider } from './client/call/CallProvider';
 import { PersistentCallContainer } from './client/call/PersistentCallContainer';
+import { ToRoomEvent } from './client/ToRoomEvent';
 
 export const createRouter = (clientConfig: ClientConfig, screenSize: ScreenSize) => {
   const { hashRouter } = clientConfig;
@@ -109,8 +111,7 @@ export const createRouter = (clientConfig: ClientConfig, screenSize: ScreenSize)
 
       <Route
         loader={() => {
-          const session = getFallbackSession();
-          if (!session) {
+          if (!getFallbackSession()) {
             const afterLoginPath = getAppPathFromHref(
               getOriginBaseUrl(hashRouter),
               window.location.href
@@ -298,6 +299,7 @@ export const createRouter = (clientConfig: ClientConfig, screenSize: ScreenSize)
           <Route path={_NOTIFICATIONS_PATH} element={<Notifications />} />
           <Route path={_INVITES_PATH} element={<Invites />} />
         </Route>
+        <Route path={TO_ROOM_EVENT_PATH} element={<ToRoomEvent />} />
       </Route>
       <Route path="/*" element={<p>Page not found</p>} />
     </Route>
