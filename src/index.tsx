@@ -5,8 +5,6 @@ import '@fontsource/inter/variable.css';
 import 'folds/dist/style.css';
 import { configClass, varsClass } from 'folds';
 
-enableMapSet();
-
 import './index.css';
 
 import { trimTrailingSlash } from './app/utils/common';
