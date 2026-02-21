@@ -1,3 +1,11 @@
+# About this Fork
+This fork merges some pending pull requests in the main Cinny project:
+
+- [Voice Chat](https://github.com/cinnyapp/cinny/pull/2599)
+- [Nested subspaces](https://github.com/cinnyapp/cinny/pull/2385)
+- [Better embedding](https://github.com/cinnyapp/cinny/pull/2656)
+- [Push notifications](https://github.com/cinnyapp/cinny/pull/2356)
+- [Better mobile UI](https://github.com/cinnyapp/cinny/pull/2366)
 # Cinny
 <p>
     <a href="https://github.com/ajbura/cinny/releases">
