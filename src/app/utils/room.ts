@@ -272,8 +272,8 @@ export const getRoomIconSrc = (
   const roomTypeIcons: Record<string, RoomIcons> = {
     [RoomType.Call]: {
       base: icons.VolumeHigh,
-      locked: icons.Lock,
-      public: icons.VolumeHigh,
+      locked: icons.VolumeHighLock,
+      public: icons.VolumeHighGlobe,
     },
     [RoomType.Space]: {
       base: icons.Space,
