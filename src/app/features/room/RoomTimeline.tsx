@@ -436,7 +436,6 @@ const getRoomUnreadInfo = (room: Room, scrollTo = false) => {
 
 export function RoomTimeline({ room, eventId, roomInputRef, editor }: RoomTimelineProps) {
   const mx = useMatrixClient();
-  const { t } = useTranslation();
   const useAuthentication = useMediaAuthentication();
   const [hideActivity] = useSetting(settingsAtom, 'hideActivity');
   const [messageLayout] = useSetting(settingsAtom, 'messageLayout');
@@ -612,8 +611,15 @@ export function RoomTimeline({ room, eventId, roomInputRef, editor }: RoomTimeli
     room,
     useCallback(
       (mEvt: MatrixEvent) => {
+        // if user is at bottom of timeline
+        // keep paginating timeline and conditionally mark as read
+        // otherwise we update timeline without paginating
+        // so timeline can be updated with evt like: edits, reactions etc
         if (atBottomRef.current) {
           if (document.hasFocus() && (!unreadInfo || mEvt.getSender() === mx.getUserId())) {
+            // Check if the document is in focus (user is actively viewing the app),
+            // and either there are no unread messages or the latest message is from the current user.
+            // If either condition is met, trigger the markAsRead function to send a read receipt.
             requestAnimationFrame(() => markAsRead(mx, mEvt.getRoomId()!, hideActivity));
           }
 
@@ -681,11 +687,13 @@ export function RoomTimeline({ room, eventId, roomInputRef, editor }: RoomTimeli
     }, [room, liveTimelineLinked])
   );
 
+  // Stay at bottom when room editor resize
   useResizeObserver(
     useMemo(() => {
       let mounted = false;
       return (entries) => {
         if (!mounted) {
+          // skip initial mounting call
           mounted = true;
           return;
         }
@@ -753,6 +761,8 @@ export function RoomTimeline({ room, eventId, roomInputRef, editor }: RoomTimeli
         if (inFocus && atBottomRef.current) {
           if (unreadInfo?.inLiveTimeline) {
             handleOpenEvent(unreadInfo.readUptoEventId, false, (scrolled) => {
+              // the unread event is already in view
+              // so, try mark as read;
               if (!scrolled) {
                 tryAutoMarkAsRead();
               }
@@ -766,6 +776,7 @@ export function RoomTimeline({ room, eventId, roomInputRef, editor }: RoomTimeli
     )
   );
 
+  // Handle up arrow edit
   useKeyDown(
     window,
     useCallback(
@@ -796,6 +807,7 @@ export function RoomTimeline({ room, eventId, roomInputRef, editor }: RoomTimeli
       }
     }, [eventId]);
 
+  // Scroll to bottom on initial timeline load
   useLayoutEffect(() => {
     const scrollEl = scrollRef.current;
     if (scrollEl) {
@@ -803,6 +815,8 @@ export function RoomTimeline({ room, eventId, roomInputRef, editor }: RoomTimeli
     }
   }, []);
 
+  // if live timeline is linked and unreadInfo change
+  // Scroll to last read message
   useLayoutEffect(() => {
     const { readUptoEventId, inLiveTimeline, scrollTo } = unreadInfo ?? {};
     if (readUptoEventId && inLiveTimeline && scrollTo) {
@@ -820,6 +834,7 @@ export function RoomTimeline({ room, eventId, roomInputRef, editor }: RoomTimeli
     }
   }, [room, unreadInfo, scrollToItem]);
 
+  // scroll to focused message
   useLayoutEffect(() => {
     if (focusItem && focusItem.scrollTo) {
       scrollToItem(focusItem.index, {
@@ -838,6 +853,7 @@ export function RoomTimeline({ room, eventId, roomInputRef, editor }: RoomTimeli
     }, 2000);
   }, [alive, focusItem, scrollToItem]);
 
+  // scroll to bottom of timeline
   const scrollToBottomCount = scrollToBottomRef.current.count;
   useLayoutEffect(() => {
     if (scrollToBottomCount > 0) {
@@ -847,24 +863,14 @@ export function RoomTimeline({ room, eventId, roomInputRef, editor }: RoomTimeli
     }
   }, [scrollToBottomCount]);
 
+  // Remove unreadInfo on mark as read
   useEffect(() => {
     if (!unread) {
       setUnreadInfo(undefined);
     }
   }, [unread]);
 
-  const handleEdit = useCallback(
-    (editEvtId?: string) => {
-      if (editEvtId) {
-        setEditId(editEvtId);
-        return;
-      }
-      setEditId(undefined);
-      ReactEditor.focus(editor);
-    },
-    [editor]
-  );
-
+  // scroll out of view msg editor in view.
   useEffect(() => {
     if (editId) {
       const editMsgElement =
@@ -1002,6 +1008,18 @@ export function RoomTimeline({ room, eventId, roomInputRef, editor }: RoomTimeli
     },
     [mx, room]
   );
+  const handleEdit = useCallback(
+    (editEvtId?: string) => {
+      if (editEvtId) {
+        setEditId(editEvtId);
+        return;
+      }
+      setEditId(undefined);
+      ReactEditor.focus(editor);
+    },
+    [editor]
+  );
+  const { t } = useTranslation();
 
   const renderMatrixEvent = useMatrixEventRenderer<
     [string, MatrixEvent, number, EventTimelineSet, boolean]

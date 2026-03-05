@@ -1,16 +1,8 @@
 import { style } from '@vanilla-extract/css';
-import { DefaultReset, color, config, toRem } from 'folds';
+import { DefaultReset, config, toRem } from 'folds';
 
 export const MessageBase = style({
   position: 'relative',
-  '@media': {
-    'screen and (max-width: 768px)': {
-      userSelect: 'none',
-      WebkitUserSelect: 'none',
-      MozUserSelect: 'none',
-      msUserSelect: 'none',
-    },
-  },
 });
 export const MessageBaseBubbleCollapsed = style({
   paddingTop: 0,
