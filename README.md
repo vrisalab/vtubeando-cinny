@@ -5,7 +5,6 @@ This fork merges some pending pull requests in the main Cinny project:
 - [Nested subspaces](https://github.com/cinnyapp/cinny/pull/2385)
 - [Better embedding](https://github.com/cinnyapp/cinny/pull/2656)
 - [Push notifications](https://github.com/cinnyapp/cinny/pull/2356)
-- [Better mobile UI](https://github.com/cinnyapp/cinny/pull/2366)
 - [Ghost notifications on bridges](https://github.com/cinnyapp/cinny/pull/2588)
 # Cinny
 <p>
