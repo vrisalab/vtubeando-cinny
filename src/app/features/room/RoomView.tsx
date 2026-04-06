@@ -21,7 +21,7 @@ import { settingsAtom } from '../../state/settings';
 import { useSetting } from '../../state/hooks/settings';
 import { useRoomPermissions } from '../../hooks/useRoomPermissions';
 import { useRoomCreators } from '../../hooks/useRoomCreators';
-import { ScreenSize, useScreenSizeContext } from '../../hooks/useScreenSize';
+import { useRoom } from '../../hooks/useRoom';
 
 const FN_KEYS_REGEX = /^F\d+$/;
 const shouldFocusMessageField = (evt: KeyboardEvent): boolean => {
@@ -54,13 +54,13 @@ const shouldFocusMessageField = (evt: KeyboardEvent): boolean => {
   return true;
 };
 
-export function RoomView({ room, eventId }: { room: Room; eventId?: string }) {
+export function RoomView({ eventId }: { eventId?: string }) {
   const roomInputRef = useRef<HTMLDivElement>(null);
   const roomViewRef = useRef<HTMLDivElement>(null);
 
   const [hideActivity] = useSetting(settingsAtom, 'hideActivity');
-  const screenSize = useScreenSizeContext();
 
+  const room = useRoom();
   const { roomId } = room;
   const editor = useEditor();
 
@@ -91,14 +91,7 @@ export function RoomView({ room, eventId }: { room: Room; eventId?: string }) {
   );
 
   return (
-    <Page
-      ref={roomViewRef}
-      style={
-        room.isCallRoom() && screenSize === ScreenSize.Desktop
-          ? { maxWidth: toRem(399), minWidth: toRem(399) }
-          : {}
-      }
-    >
+    <Page ref={roomViewRef}>
       <Box grow="Yes" direction="Column">
         <RoomTimeline
           key={roomId}
