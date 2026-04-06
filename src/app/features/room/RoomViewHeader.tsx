@@ -264,7 +264,6 @@ export function RoomViewHeader({ callView }: { callView?: boolean }) {
   const [pinMenuAnchor, setPinMenuAnchor] = useState<RectCords>();
   const direct = useIsDirectRoom();
 
-  const { isChatOpen, toggleChat } = useCallState();
   const pinnedEvents = useRoomPinnedEvents(room);
   const encryptionEvent = useStateEvent(room, StateEvent.RoomEncryption);
   const encryptedRoom = !!encryptionEvent;
@@ -472,30 +471,6 @@ export function RoomViewHeader({ callView }: { callView?: boolean }) {
               {(triggerRef) => (
                 <IconButton fill="None" ref={triggerRef} onClick={handleMemberToggle}>
                   <Icon size="400" src={Icons.User} />
-                <IconButton
-                  fill="None"
-                  ref={triggerRef}
-                  onClick={() => setPeopleDrawer((drawer) => !drawer)}
-                >
-                  <Icon size="400" src={Icons.User} filled={peopleDrawer} />
-                </IconButton>
-              )}
-            </TooltipProvider>
-          )}
-
-          {room.isCallRoom() && !direct && (
-            <TooltipProvider
-              position="Bottom"
-              offset={4}
-              tooltip={
-                <Tooltip>
-                  <Text>Chat</Text>
-                </Tooltip>
-              }
-            >
-              {(triggerRef) => (
-                <IconButton fill="None" ref={triggerRef} onClick={toggleChat}>
-                  <Icon size="400" src={Icons.Message} filled={isChatOpen} />
                 </IconButton>
               )}
             </TooltipProvider>

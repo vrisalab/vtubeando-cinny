@@ -295,7 +295,6 @@ export const createRouter = (clientConfig: ClientConfig, screenSize: ScreenSize)
           <Route path={_NOTIFICATIONS_PATH} element={<Notifications />} />
           <Route path={_INVITES_PATH} element={<Invites />} />
         </Route>
-        <Route path={TO_ROOM_EVENT_PATH} element={<ToRoomEvent />} />
       </Route>
       <Route path="/*" element={<p>Page not found</p>} />
     </Route>

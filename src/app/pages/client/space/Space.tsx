@@ -695,7 +695,6 @@ export function Space() {
           </NavCategory>
         </Box>
       </PageNavContent>
-      <CallNavStatus />
     </PageNav>
   );
 }
